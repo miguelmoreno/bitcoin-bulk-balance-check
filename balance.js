@@ -1,35 +1,38 @@
-'use strict'
+'use strict';
 
 // Required modules
-var _			= require('underscore');
-var fs			= require('fs-extra');
-var deasync		= require('deasync');
-var request		= require('request');
-const csv		= require("csvtojson/v2");
-const bitcoin	= require("bitcoinjs-lib");
-
-const minimist		= require('minimist');
+const _				= require('underscore');
+const fs			= require('fs-extra');
+const deasync		= require('deasync');
+const request		= require('request');
+const csv			= require("csvtojson/v2");
+const bitcoin		= require("bitcoinjs-lib");
 const buildOptions	= require('minimist-options');
+const minimist		= require('minimist');
 
 const options = buildOptions({
 	walletName: {
 		type: 'string',
 		alias: 'w'
 	},
+
 	coinName: {
 		type: 'string',
 		alias: 'c'
 	},
+
 	bip: {
 		type: 'string',
 		alias: 'b'
 	},
+
 	hardened: {
-		type: 'string', //Yes || No
+		type: 'boolean',
 		alias: 'h'
 	},
+
 	password: {
-		type: 'string', //Yes || No
+		type: 'boolean',
 		alias: 'p'
 	}
 });
@@ -42,8 +45,17 @@ const bip			= args['bip'];
 const hardened		= args['hardened'];
 const password		= args['password'];
 
+let wallet = {
+	name: walletName,
+	coin: coinName,
+	bip: bip,
+	isHardened: hardened,
+	hasPassword: password
+};
+
 // Settings (change these if needed)
-var address_list_filename = walletName + "_" + coinName + "_BIP" + bip + "_" + hardened + "Hardened_" + password + "25thWordPwd.csv";
+var address_descriptor		= walletName + "_" + coinName + "_B" + bip + "_H" + hardened + "_P" + password;
+var address_list_filename	= address_descriptor + ".csv";
 
 var save_to_file			= true; // save results to file
 var log_to_console			= true; // show results in console
@@ -51,29 +63,15 @@ var delay_between_checks	= 1000; // 1000 is one second
 var force_update_balance	= true; // true or false if you want it to grab balances for addresses that you've already checked before
 var exit_on_failure			= true; // true or false if you want the script to exit on a invalid response from the balance query
 
-//////////////////////////////////////////////////////
-// DO NOT EDIT BELOW THIS LINE
-//////////////////////////////////////////////////////
-
-// Make Directories (do not edit )
-//if (save_to_file && !fs.existsSync(__dirname + '\\balances')) {
-//	//fs.mkdirSync(__dirname + '\\balances');
-//	fs.mkdirSync(__dirname + '\\balances\\all\\');
-//	fs.mkdirSync(__dirname + '\\balances\\zero\\' + walletName);
-//	fs.mkdirSync(__dirname + '\\balances\\non-zero\\' + walletName);
-//}
-
-
 // Set up variables 
 var url_prefix = 'https://blockchain.info/q/addressbalance/';
 var address_list_file = __dirname + '\\addresses\\' + address_list_filename;
 var processing = false;
-console.log(address_list_file);
 
+console.log(address_list_file);
 
 csv(
 	{
-		flatKeys: true,
 		colParser: {
 			"path": "omit",
 			"column2": "string",
@@ -81,10 +79,15 @@ csv(
 			"private key": "omit"
 		}
 	})
-	.fromFile(address_list_filename)
-	.subscribe((jsonObj) => {
+	.fromFile(address_list_file)
+
+	.on('error', (err) => {
+		console.log(err)
+	})
+	.then((jsonObj) => {
 		AddressLookUp(jsonObj);
 	});
+	
 
 // loop through each address, pulling the balance from blockchain.info
 // NOTICE: blockchain.info has rate limits. Set the delay value above to the number in miliseconds to wait between each address balance check
@@ -100,8 +103,8 @@ function AddressLookUp(address_list) {
 
 		processing = true;
 		
-		var check_url = url_prefix + address;
-		var csv_file = __dirname + '\\balances\\all\\' + walletName + "." + address + '.txt';
+		var check_url = url_prefix + address.address;
+		var csv_file = __dirname + '\\balances\\all\\' + address.address + '.txt';
 
 		fs.stat(csv_file, function (err, stats) {
 			if (err || force_update_balance) {
@@ -110,7 +113,7 @@ function AddressLookUp(address_list) {
 
 				request(check_url, function (err, response) {
 					balance = response.body;
-				})
+				});
 
 				while (balance == 'n/a') {
 					deasync.sleep(1);
@@ -122,13 +125,14 @@ function AddressLookUp(address_list) {
 					if (save_to_file) {
 						if ((balance * 1) > 0) {
 							// balance found!
-							var balance_file = __dirname + '\\balances\\non-zero\\' + walletName + "." + address + '.txt';
+							var balance_file = __dirname + '\\balances\\non-zero\\' + walletName + "." + address.addres + '.txt';
 						} else {
-							var balance_file = __dirname + '\\balances\\zero\\' + walletName + "." + address + '.txt';
+							var balance_file = __dirname + '\\balances\\zero\\' + walletName + "." + address.address + '.txt';
 						}
 
-						fs.writeFileSync(balance_file, balance);
-						fs.writeFileSync(csv_file, balance);
+						var address_details = "Device, Coin, BIP, isHardenedAddress, has25thWordPassword" + "\\r\\n" + address_descriptor + ": Balance: BTC" + balance;
+						fs.writeFileSync(balance_file, address_details);
+						fs.writeFileSync(csv_file, address_details);
 					}
 
 					if (log_to_console) {
