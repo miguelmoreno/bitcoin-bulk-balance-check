@@ -1,6 +1,6 @@
 {
   "name": "bitcoin-bulk-balance-check",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A tool to check the address balance for multiple bitcoin addresses.",
   "main": "bitcoin-bulk-balance-check.js",
   "scripts": {
@@ -24,9 +24,14 @@
   },
   "homepage": "https://github.com/BranndonWork/bitcoin-bulk-balance-check#readme",
   "dependencies": {
-    "deasync": "^0.1.12",
-    "fs": "0.0.1-security",
-    "request": "^2.83.0",
-    "underscore": "^1.8.3"
+    "bitcoinjs-lib": "^4.0.1",
+    "csvtojson": "^2.0.8",
+    "deasync": "^0.1.13",
+    "fast-csv": "^2.4.1",
+    "fs-extra": "^7.0.0",
+    "minimist": "^1.2.0",
+    "minimist-options": "^3.0.2",
+    "request": "^2.87.0",
+    "underscore": "^1.9.1"
   }
 }
