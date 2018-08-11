@@ -16,11 +16,11 @@
     },
     {
       "Id": "e4943217-f62d-47a0-ae27-8a2ef9a0f53f",
-      "Command": "-h 0"
+      "Command": "-h false"
     },
     {
       "Id": "cd236107-19bd-44fe-bd6f-351aa4eea97a",
-      "Command": "-p 0"
+      "Command": "-p false"
     }
   ]
 }

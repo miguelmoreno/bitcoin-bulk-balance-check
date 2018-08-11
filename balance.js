@@ -1,14 +1,16 @@
 'use strict';
 
 // Required modules
-const _				= require('underscore');
-const fs			= require('fs-extra');
-const deasync		= require('deasync');
-const request		= require('request');
-const csv			= require("csvtojson/v2");
-const bitcoin		= require("bitcoinjs-lib");
-const buildOptions	= require('minimist-options');
-const minimist		= require('minimist');
+const _					= require('underscore');
+const fs				= require('fs-extra');
+const deasync			= require('deasync');
+const request			= require('request');
+const csv				= require("csvtojson/v2");
+const bitcoin			= require("bitcoinjs-lib");
+const buildOptions		= require('minimist-options');
+const minimist			= require('minimist');
+const json2csv			= require('json2csv').parse;
+const jsonfile			= require('jsonfile');
 
 const options = buildOptions({
 	walletName: {
@@ -45,17 +47,17 @@ const bip			= args['bip'];
 const hardened		= args['hardened'];
 const password		= args['password'];
 
-let wallet = {
-	name: walletName,
-	coin: coinName,
-	bip: bip,
-	isHardened: hardened,
-	hasPassword: password
+const address_properties = {
+	"walletName": walletName,
+	"coinName": coinName,
+	"bip": bip,
+	"isHardened": hardened,
+	"has25Password": password
 };
 
 // Settings (change these if needed)
-var address_descriptor		= walletName + "_" + coinName + "_B" + bip + "_H" + hardened + "_P" + password;
-var address_list_filename	= address_descriptor + ".csv";
+const fields = ["walletName", "coinName", "bip", "isHardened", "has25Password", "balance"];
+const opts = { fields };
 
 var save_to_file			= true; // save results to file
 var log_to_console			= true; // show results in console
@@ -65,7 +67,9 @@ var exit_on_failure			= true; // true or false if you want the script to exit on
 
 // Set up variables 
 var url_prefix = 'https://blockchain.info/q/addressbalance/';
-var address_list_file = __dirname + '\\addresses\\' + address_list_filename;
+var file_name_descriptor = address_properties.walletName + "_" + address_properties.coinName + "_B" + address_properties.bip + "_H" + address_properties.isHardened + "_P" + address_properties.has25Password;
+var address_list_file = __dirname + '\\addresses\\' + file_name_descriptor + ".csv";
+
 var processing = false;
 
 console.log(address_list_file);
@@ -85,14 +89,10 @@ csv(
 		console.log(err)
 	})
 	.then((jsonObj) => {
-		AddressLookUp(jsonObj);
+		AddressLookUp(jsonObj, opts, address_properties, file_name_descriptor);
 	});
 	
-
-// loop through each address, pulling the balance from blockchain.info
-// NOTICE: blockchain.info has rate limits. Set the delay value above to the number in miliseconds to wait between each address balance check
-
-function AddressLookUp(address_list) {
+function AddressLookUp(address_list, opts, address_properties, file_name_descriptor) {
 	_.each(address_list, function (address, index) {
 
 		deasync.sleep(delay_between_checks); // wait the specified amount of time between addresses
@@ -102,9 +102,12 @@ function AddressLookUp(address_list) {
 		}
 
 		processing = true;
-		
+
+		//var 
+		var address_list_filename = address.address + ".csv";
+
 		var check_url = url_prefix + address.address;
-		var csv_file = __dirname + '\\balances\\all\\' + address.address + '.txt';
+		var csv_file = __dirname + '\\balances\\' + file_name_descriptor +"_" + address.address + '.csv';
 
 		fs.stat(csv_file, function (err, stats) {
 			if (err || force_update_balance) {
@@ -120,19 +123,21 @@ function AddressLookUp(address_list) {
 				}
 
 				if (/^\d+$/.test(balance)) {
-					// it's a number, which means it's a valid reply
-
 					if (save_to_file) {
-						if ((balance * 1) > 0) {
-							// balance found!
-							var balance_file = __dirname + '\\balances\\non-zero\\' + walletName + "." + address.addres + '.txt';
-						} else {
-							var balance_file = __dirname + '\\balances\\zero\\' + walletName + "." + address.address + '.txt';
+						if (balance == "0") { balance += ".0000000" };
+
+						var balance_file = __dirname + "\\balances\\" + file_name_descriptor + "_" + address.address + "_" + balance + '.txt';
+
+						try {
+							var address_detail		= json2csv(address_properties, opts);
+
+							fs.writeFileSync(balance_file, address_detail, "UTF-8")
+							fs.appendFile(balance_file, balance, "UTF-8");
+						} catch (err) {
+							console.error(err);
 						}
 
-						var address_details = "Device, Coin, BIP, isHardenedAddress, has25thWordPassword" + "\\r\\n" + address_descriptor + ": Balance: BTC" + balance;
-						fs.writeFileSync(balance_file, address_details);
-						fs.writeFileSync(csv_file, address_details);
+
 					}
 
 					if (log_to_console) {
