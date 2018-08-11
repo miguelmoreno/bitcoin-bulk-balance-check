@@ -1,0 +1,26 @@
+{
+  "FileVersion": 2,
+  "Id": "2d54c810-36e6-462a-bd6d-5335f211228c",
+  "Items": [
+    {
+      "Id": "3b54cad4-601a-4cc6-840c-f6d16e3efa6e",
+      "Command": "-w MrGrey"
+    },
+    {
+      "Id": "3bf381da-042e-4a61-9a96-1b57b1ece1d1",
+      "Command": "-c BTC"
+    },
+    {
+      "Id": "d5141baa-2323-40df-bc7f-f1d77904d0dc",
+      "Command": "-b 32"
+    },
+    {
+      "Id": "e4943217-f62d-47a0-ae27-8a2ef9a0f53f",
+      "Command": "-h false"
+    },
+    {
+      "Id": "cd236107-19bd-44fe-bd6f-351aa4eea97a",
+      "Command": "-p false"
+    }
+  ]
+}

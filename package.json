@@ -1,14 +1,14 @@
 {
-  "name": "bitcoin-bulk-balance-check",
-  "version": "1.0.1",
+  "name": "BtcBalance",
+  "version": "1.1.2",
   "description": "A tool to check the address balance for multiple bitcoin addresses.",
-  "main": "bitcoin-bulk-balance-check.js",
+  "main": "balance.js",
   "scripts": {
-    "start": "node bitcoin-bulk-balance-check.js"
+    "start": "node balance.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/BranndonWork/bitcoin-bulk-balance-check.git"
+    "url": "git+https://github.com/miguelmoreno/bitcoin-bulk-balance-check.git"
   },
   "keywords": [
     "bitcoin",
@@ -20,13 +20,20 @@
   "author": "Branndon Coelho",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/BranndonWork/bitcoin-bulk-balance-check/issues"
+    "url": "https://github.com/miguelmoreno/bitcoin-bulk-balance-check/issues"
   },
-  "homepage": "https://github.com/BranndonWork/bitcoin-bulk-balance-check#readme",
+  "homepage": "https://github.com/miguelmoreno/bitcoin-bulk-balance-check#readme",
   "dependencies": {
-    "deasync": "^0.1.12",
-    "fs": "0.0.1-security",
-    "request": "^2.83.0",
-    "underscore": "^1.8.3"
+    "bitcoinjs-lib": "^4.0.1",
+    "csvtojson": "^2.0.8",
+    "deasync": "^0.1.13",
+    "fast-csv": "^2.4.1",
+    "fs-extra": "^7.0.0",
+    "json2csv": "^4.2.1",
+    "jsonfile": "^4.0.0",
+    "minimist": "^1.2.0",
+    "minimist-options": "^3.0.2",
+    "request": "^2.87.0",
+    "underscore": "^1.9.1"
   }
 }
