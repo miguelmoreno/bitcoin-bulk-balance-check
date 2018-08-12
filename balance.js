@@ -9,16 +9,8 @@ const csvtojson			= require("csvtojson/v2");
 const bitcoin			= require("bitcoinjs-lib");
 const buildOptions		= require('minimist-options');
 const minimist			= require('minimist');
-const json2csv			= require('json2csv').parse;
-const jsonfile			= require('jsonfile');
-const csvdata			= require('csvdata');
-const csv				= require('csv');
-const parse				= require('csv-parse/lib/sync')
-const csvparse			= require('csv-parse');
+
 const fastcsv			= require("fast-csv");
-const csvString			= require('csv-string');
-const papa = require('papaparse');
-const forEach = require("for-each");
 const addressValidator = require('wallet-address-validator');
 
 
@@ -69,7 +61,6 @@ var save_to_file			= true; // save results to file
 var log_to_console			= true; // show results in console
 var delay_between_checks	= 1000; // 1000 is one second
 var force_update_balance	= true; // true or false if you want it to grab balances for addresses that you've already checked before
-var exit_on_failure			= true; // true or false if you want the script to exit on a invalid response from the balance query
 
 // Set up variables 
 var url_prefix = "https://blockchain.info/q/addressbalance/";
@@ -82,23 +73,22 @@ for (var key in address_properties) {
 }
 	
 var address_list_file = __dirname + '\\addresses\\' + file_name_descriptor + "csv";
-var address_list_file_out = __dirname + '\\addresses\\_' + file_name_descriptor + "output.csv";
 
 var processing = false;
 var final_data = [];
 
 var data_stream = fs.createReadStream(address_list_file).on("finish", function () {
-	console.log("done...reading data_stream from memory!");
+	console.log("done... reading data_stream from memory!");
 });
 
 fastcsv.fromStream(data_stream, { renameHeaders: true, headers: ["Path", "Address", "Coin", "BIP", "isHardened", "hasPassword", "Balance"], discardUnmappedColumns: true })
 
 	.validate(function (data) {
-		return addressValidator.validate(data.Address, data.Coin);
+		return addressValidator.validate(data.Address, data.Coin);;
 	})
 
 	.on("data-invalid", function (data) {
-		console.log(err);
+		console.log("Address " + data.Address + " failed validation. InnerException: " + err);
 	})
 
 	.transform(function (data) {
@@ -111,6 +101,7 @@ fastcsv.fromStream(data_stream, { renameHeaders: true, headers: ["Path", "Addres
 
 	.on("data", function (data) {
 		data.Balance = AddressBalanceLookUp(data.Address);
+		console.log("Address " + data.Address + " successfully validated, Current balance: BTC " + data.Balance);
 	})
 	.on("finish", function () {
 		console.log("DONE!");
@@ -140,9 +131,6 @@ function AddressBalanceLookUp(address) {
 		if (/^\d+$/.test(balance)) {
 			balance = (balance / 100000000).toFixed(8);
 		}
-
 		return balance;
-
-		processing = false;
 	}
 };
