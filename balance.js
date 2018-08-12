@@ -5,12 +5,22 @@ const _					= require('underscore');
 const fs				= require('fs-extra');
 const deasync			= require('deasync');
 const request			= require('request');
-const csv				= require("csvtojson/v2");
+const csvtojson			= require("csvtojson/v2");
 const bitcoin			= require("bitcoinjs-lib");
 const buildOptions		= require('minimist-options');
 const minimist			= require('minimist');
 const json2csv			= require('json2csv').parse;
 const jsonfile			= require('jsonfile');
+const csvdata			= require('csvdata');
+const csv				= require('csv');
+const parse				= require('csv-parse/lib/sync')
+const csvparse			= require('csv-parse');
+const fastcsv			= require("fast-csv");
+const csvString			= require('csv-string');
+const papa = require('papaparse');
+const forEach = require("for-each");
+const addressValidator = require('wallet-address-validator');
+
 
 const options = buildOptions({
 	walletName: {
@@ -33,7 +43,7 @@ const options = buildOptions({
 		alias: 'h'
 	},
 
-	password: {
+	hasPassword: {
 		type: 'boolean',
 		alias: 'p'
 	}
@@ -45,19 +55,15 @@ const walletName	= args['walletName'];
 const coinName		= args['coinName'];
 const bip			= args['bip'];
 const hardened		= args['hardened'];
-const password		= args['password'];
+const password		= args['hasPassword'];
 
-const address_properties = {
-	"walletName": walletName,
-	"coinName": coinName,
-	"bip": bip,
+var address_properties = {
+	"Device": walletName,
+	"Coin": coinName,
+	"BIP": bip,
 	"isHardened": hardened,
-	"has25Password": password
+	"hasPassword": password
 };
-
-// Settings (change these if needed)
-const fields = ["walletName", "coinName", "bip", "isHardened", "has25Password", "balance"];
-const opts = { fields };
 
 var save_to_file			= true; // save results to file
 var log_to_console			= true; // show results in console
@@ -66,101 +72,77 @@ var force_update_balance	= true; // true or false if you want it to grab balance
 var exit_on_failure			= true; // true or false if you want the script to exit on a invalid response from the balance query
 
 // Set up variables 
-var url_prefix = 'https://blockchain.info/q/addressbalance/';
-var file_name_descriptor = address_properties.walletName + "_" + address_properties.coinName + "_B" + address_properties.bip + "_H" + address_properties.isHardened + "_P" + address_properties.has25Password;
-var address_list_file = __dirname + '\\addresses\\' + file_name_descriptor + ".csv";
+var url_prefix = "https://blockchain.info/q/addressbalance/";
+
+//prepares the file name based on its sets of properties
+var file_name_descriptor = "";
+
+for (var key in address_properties) {
+	file_name_descriptor += key + address_properties[key] + ".";
+}
+	
+var address_list_file = __dirname + '\\addresses\\' + file_name_descriptor + "csv";
+var address_list_file_out = __dirname + '\\addresses\\_' + file_name_descriptor + "output.csv";
 
 var processing = false;
+var final_data = [];
 
-console.log(address_list_file);
+var data_stream = fs.createReadStream(address_list_file).on("finish", function () {
+	console.log("done...reading data_stream from memory!");
+});
 
-csv(
-	{
-		colParser: {
-			"path": "omit",
-			"column2": "string",
-			"public key": "omit",
-			"private key": "omit"
-		}
+fastcsv.fromStream(data_stream, { renameHeaders: true, headers: ["Path", "Address", "Coin", "BIP", "isHardened", "hasPassword", "Balance"], discardUnmappedColumns: true })
+
+	.validate(function (data) {
+		return addressValidator.validate(data.Address, data.Coin);
 	})
-	.fromFile(address_list_file)
 
-	.on('error', (err) => {
-		console.log(err)
+	.on("data-invalid", function (data) {
+		console.log(err);
 	})
-	.then((jsonObj) => {
-		AddressLookUp(jsonObj, opts, address_properties, file_name_descriptor);
-	});
-	
-function AddressLookUp(address_list, opts, address_properties, file_name_descriptor) {
-	_.each(address_list, function (address, index) {
 
-		deasync.sleep(delay_between_checks); // wait the specified amount of time between addresses
+	.transform(function (data) {
+		data.Coin = address_properties.Coin;
+		data.BIP = address_properties.BIP;
+		data.isHardened = address_properties.isHardened;
+		data.hasPassword = address_properties.hasPassword;
+		return data;
+	})
 
-		while (processing) {
+	.on("data", function (data) {
+		data.Balance = AddressBalanceLookUp(data.Address);
+	})
+	.on("finish", function () {
+		console.log("DONE!");
+	})
+
+	.pipe(fastcsv.createWriteStream({ headers: true }))
+	.pipe(fs.createWriteStream(address_list_file + "_out.csv", { encoding: "utf8" }));
+
+function AddressBalanceLookUp(address) {
+	deasync.sleep(delay_between_checks);
+
+	while (processing) {
+		deasync.sleep(1);
+	}
+
+	if (force_update_balance) {
+		var balance = 'n/a';
+
+		request(url_prefix + address, function (err, response) {
+			balance = response.body;
+		});
+
+		while (balance == 'n/a') {
 			deasync.sleep(1);
 		}
 
-		processing = true;
+		if (/^\d+$/.test(balance)) {
+			balance = (balance / 100000000).toFixed(8);
+		}
 
-		//var 
-		var address_list_filename = address.address + ".csv";
+		return balance;
 
-		var check_url = url_prefix + address.address;
-		var csv_file = __dirname + '\\balances\\' + file_name_descriptor +"_" + address.address + '.csv';
-
-		fs.stat(csv_file, function (err, stats) {
-			if (err || force_update_balance) {
-				// file doesn't exist
-				var balance = 'n/a';
-
-				request(check_url, function (err, response) {
-					balance = response.body;
-				});
-
-				while (balance == 'n/a') {
-					deasync.sleep(1);
-				}
-
-				if (/^\d+$/.test(balance)) {
-					if (save_to_file) {
-						if (balance == "0") { balance += ".0000000" };
-
-						var balance_file = __dirname + "\\balances\\" + file_name_descriptor + "_" + address.address + "_" + balance + '.txt';
-
-						try {
-							var address_detail		= json2csv(address_properties, opts);
-
-							fs.writeFileSync(balance_file, address_detail, "UTF-8")
-							fs.appendFile(balance_file, balance, "UTF-8");
-						} catch (err) {
-							console.error(err);
-						}
-
-
-					}
-
-					if (log_to_console) {
-						balance = (balance / 100000000).toFixed(8);
-						console.log(address, balance);
-					}
-
-				} else {
-					if (exit_on_failure) {
-						console.log('FAILED!', balance);
-						process.exit(1);
-					}
-				}
-				processing = false;
-			} else {
-				// file exists
-				console.log("Skipping " + address);
-				var balance = fs.readFileSync(csv_file).toString();
-				balance = (balance / 100000000).toFixed(8);
-				console.log(address, balance);
-				processing = false;
-			}
-
-		});
-	});
-}
+		processing = false;
+	}
+};
