@@ -33,7 +33,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Content Include=".gitignore" />
-    <Content Include="addresses\MrGrey_BTC_B32_Hfalse_Pfalse.csv" />
+    <Content Include="addresses\DeviceMrGrey.CoinBTC.BIP32.isHardenedfalse.hasPasswordfalse.csv" />
     <Content Include="LICENSE" />
     <Content Include="package.json" />
     <Content Include="README.md" />

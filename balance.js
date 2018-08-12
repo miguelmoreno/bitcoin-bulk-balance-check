@@ -57,17 +57,13 @@ const bip			= args['bip'];
 const hardened		= args['hardened'];
 const password		= args['hasPassword'];
 
-const address_properties = {
+var address_properties = {
 	"Device": walletName,
 	"Coin": coinName,
 	"BIP": bip,
 	"isHardened": hardened,
 	"hasPassword": password
 };
-
-// Settings (change these if needed)
-//const fields = ["walletName", "coinName", "bip", "isHardened", "has25Password", "balance"];
-//const opts = { fields };
 
 var save_to_file			= true; // save results to file
 var log_to_console			= true; // show results in console
@@ -89,8 +85,22 @@ var address_list_file = __dirname + '\\addresses\\' + file_name_descriptor + "cs
 var address_list_file_out = __dirname + '\\addresses\\_' + file_name_descriptor + "output.csv";
 
 var processing = false;
+var final_data = [];
 
-fastcsv.fromPath(address_list_file, { renameHeaders:true, headers:["Path", "Address", "Coin", "BIP", "isHardened", "hasPassword", "Balance"], discardUnmappedColumns:true })
+var data_stream = fs.createReadStream(address_list_file).on("finish", function () {
+	console.log("done...reading data_stream from memory!");
+});
+
+fastcsv.fromStream(data_stream, { renameHeaders: true, headers: ["Path", "Address", "Coin", "BIP", "isHardened", "hasPassword", "Balance"], discardUnmappedColumns: true })
+
+	.validate(function (data) {
+		return addressValidator.validate(data.Address, data.Coin);
+	})
+
+	.on("data-invalid", function (data) {
+		console.log(err);
+	})
+
 	.transform(function (data) {
 		data.Coin = address_properties.Coin;
 		data.BIP = address_properties.BIP;
@@ -98,28 +108,25 @@ fastcsv.fromPath(address_list_file, { renameHeaders:true, headers:["Path", "Addr
 		data.hasPassword = address_properties.hasPassword;
 		return data;
 	})
-	.validate(function (data) {
-		return addressValidator.validate(data.Address, data.Coin);
-	})
-	.on("data-invalid", function (data) {
-		console.log(err);
-	})
+
 	.on("data", function (data) {
-		AddressLookUp(data.Address, address_list_file_out);
+		data.Balance = AddressBalanceLookUp(data.Address);
 	})
-	.on("end", function () {
-		console.log("done");
-	});
-	
-function AddressLookUp(address, output_file) {
-	deasync.sleep(delay_between_checks); // wait the specified amount of time between addresses
+	.on("finish", function () {
+		console.log("DONE!");
+	})
+
+	.pipe(fastcsv.createWriteStream({ headers: true }))
+	.pipe(fs.createWriteStream(address_list_file + "_out.csv", { encoding: "utf8" }));
+
+function AddressBalanceLookUp(address) {
+	deasync.sleep(delay_between_checks);
 
 	while (processing) {
 		deasync.sleep(1);
 	}
 
 	if (force_update_balance) {
-		// file doesn't exist
 		var balance = 'n/a';
 
 		request(url_prefix + address, function (err, response) {
@@ -131,55 +138,11 @@ function AddressLookUp(address, output_file) {
 		}
 
 		if (/^\d+$/.test(balance)) {
-			if (save_to_file) {
-
-				var output_contents = json2csv(address_properties, opts);
-
-				if (balance == "0") { balance += ".0000000" };
-
-				try {
-					fs.writeFileSync(output_file, address_header, "UTF-8")
-					fs.appendFile(output_file, output_csingle_address, "UTF-8");
-				} catch (err) {
-					console.error(err);
-				}
-			}
-
-			if (log_to_console) {
-				balance = (balance / 100000000).toFixed(8);
-				console.log(address, balance);
-			}
-
-		} else {
-			if (exit_on_failure) {
-				console.log('FAILED!', balance);
-				process.exit(1);
-			}
+			balance = (balance / 100000000).toFixed(8);
 		}
-		processing = false;
-	} else {
-		// file exists
-		console.log("Skipping " + address);
-		var balance = fs.readFileSync(csv_file).toString();
-		balance = (balance / 100000000).toFixed(8);
-		console.log(address, balance);
+
+		return balance;
+
 		processing = false;
 	}
 };
-
-/*
-function isValidBitcoinAddress(stringBitCoinID: String) -> Bool {
-	let fullAddress = stringBitCoinID.components(separatedBy: ":")
-
-	guard fullAddress.count == 2, fullAddress[0] == "bitcoin" else {
-		return false
-	}
-
-	let r = fullAddress[1]
-	let pattern = "^[13][a-km-zA-HJ-NP-Z1-9]{25,34}$"
-
-	let bitCoinIDTest = NSPredicate(format: "SELF MATCHES %@", pattern)
-	let result = bitCoinIDTest.evaluate(with: r)
-
-	return result
-}*/
