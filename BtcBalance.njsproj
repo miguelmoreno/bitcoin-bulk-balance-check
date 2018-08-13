@@ -34,16 +34,53 @@
   <ItemGroup>
     <Content Include=".gitignore" />
     <Content Include="addresses\DeviceMrGrey.CoinBTC.BIP32.isHardenedfalse.hasPasswordfalse.csv" />
+    <Content Include="bip39\tests\package.json" />
+    <Content Include="bip39\tests\spec\support\jasmine.json" />
     <Content Include="LICENSE" />
     <Content Include="package.json" />
     <Content Include="README.md" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="addresses\" />
+    <Folder Include="bip39\" />
+    <Folder Include="bip39\src\" />
+    <Folder Include="bip39\src\js\" />
+    <Folder Include="bip39\tests\" />
+    <Folder Include="bip39\tests\spec\" />
+    <Folder Include="bip39\tests\spec\support\" />
     <Folder Include="seeds\" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="balance.js" />
+    <Compile Include="bip39\src\js\basex.js" />
+    <Compile Include="bip39\src\js\bchaddrjs-0.2.1.js" />
+    <Compile Include="bip39\src\js\biginteger.js" />
+    <Compile Include="bip39\src\js\bitcoinjs-3.3.2.js" />
+    <Compile Include="bip39\src\js\bitcoinjs-bip38-2.0.2.js" />
+    <Compile Include="bip39\src\js\bitcoinjs-extensions.js" />
+    <Compile Include="bip39\src\js\bootstrap-3.3.7.js" />
+    <Compile Include="bip39\src\js\entropy.js" />
+    <Compile Include="bip39\src\js\ethereumjs-util.js" />
+    <Compile Include="bip39\src\js\index.js" />
+    <Compile Include="bip39\src\js\jquery-3.2.1.js" />
+    <Compile Include="bip39\src\js\jsbip39.js" />
+    <Compile Include="bip39\src\js\kjua-0.1.1.min.js" />
+    <Compile Include="bip39\src\js\levenshtein.js" />
+    <Compile Include="bip39\src\js\polyfill.es6.js" />
+    <Compile Include="bip39\src\js\ripple-util.js" />
+    <Compile Include="bip39\src\js\segwit-parameters.js" />
+    <Compile Include="bip39\src\js\sjcl-bip39.js" />
+    <Compile Include="bip39\src\js\unorm.js" />
+    <Compile Include="bip39\src\js\wordlist_chinese_simplified.js" />
+    <Compile Include="bip39\src\js\wordlist_chinese_traditional.js" />
+    <Compile Include="bip39\src\js\wordlist_english.js" />
+    <Compile Include="bip39\src\js\wordlist_french.js" />
+    <Compile Include="bip39\src\js\wordlist_italian.js" />
+    <Compile Include="bip39\src\js\wordlist_japanese.js" />
+    <Compile Include="bip39\src\js\wordlist_korean.js" />
+    <Compile Include="bip39\src\js\wordlist_spanish.js" />
+    <Compile Include="bip39\src\js\zxcvbn.js" />
+    <Compile Include="bip39\tests\spec\tests.js" />
   </ItemGroup>
   <!-- Do not delete the following Import Project.  While this appears to do nothing it is a marker for setting TypeScript properties before our import that depends on them. -->
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\TypeScript\Microsoft.TypeScript.targets" Condition="False" />
