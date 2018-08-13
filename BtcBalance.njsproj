@@ -39,10 +39,6 @@
     <Content Include="README.md" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="balances\" />
-    <Folder Include="balances\all\" />
-    <Folder Include="balances\non-zero\" />
-    <Folder Include="balances\zero\" />
     <Folder Include="addresses\" />
     <Folder Include="seeds\" />
   </ItemGroup>

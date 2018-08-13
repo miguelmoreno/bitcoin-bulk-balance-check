@@ -11,7 +11,7 @@ const buildOptions		= require('minimist-options');
 const minimist			= require('minimist');
 
 const fastcsv			= require("fast-csv");
-const addressValidator = require('wallet-address-validator');
+const addressValidator	= require('wallet-address-validator');
 
 
 const options = buildOptions({
@@ -101,7 +101,7 @@ fastcsv.fromStream(data_stream, { renameHeaders: true, headers: ["Path", "Addres
 
 	.on("data", function (data) {
 		data.Balance = AddressBalanceLookUp(data.Address);
-		console.log("Address " + data.Address + " successfully validated, Current balance: BTC " + data.Balance);
+		console.log("Address " + data.Address + " successfully validated at derivation path: " + data.Path + ", shows a Current balance: BTC " + data.Balance);
 	})
 	.on("finish", function () {
 		console.log("DONE!");
